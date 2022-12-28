@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:math';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -18,11 +20,17 @@ class CreateAccount extends StatefulWidget {
 
 class _CreateAccountState extends State<CreateAccount> {
   String? typeUser;
+  String avatar = '';
   File? file;
   double? lat, lng;
   bool load = true;
   final formKey = GlobalKey<FormState>();
   bool statusRedeye = true;
+  TextEditingController nameController = TextEditingController();
+  TextEditingController usernameController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  TextEditingController phoneController = TextEditingController();
+  TextEditingController addressController = TextEditingController();
 
   @override
   void initState() {
@@ -94,6 +102,7 @@ class _CreateAccountState extends State<CreateAccount> {
           margin: EdgeInsets.only(top: 16),
           width: size * 0.6,
           child: TextFormField(
+            controller: nameController,
             validator: (value) {
               if (value!.isEmpty) {
                 return 'กรุณากรอก Name ด้วย';
@@ -114,6 +123,10 @@ class _CreateAccountState extends State<CreateAccount> {
                 borderSide: BorderSide(color: MyConstant.dark),
                 borderRadius: BorderRadius.circular(60),
               ),
+              errorBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: MyConstant.dark),
+              borderRadius: BorderRadius.circular(60),
+            )
             ),
           ),
         ),
@@ -129,6 +142,7 @@ class _CreateAccountState extends State<CreateAccount> {
           margin: EdgeInsets.only(top: 16),
           width: size * 0.6,
           child: TextFormField(
+            controller: usernameController,
             validator: (value) {
               if (value!.isEmpty) {
                 return 'กรุณากรอก Username ด้วย';
@@ -149,6 +163,10 @@ class _CreateAccountState extends State<CreateAccount> {
                 borderSide: BorderSide(color: MyConstant.dark),
                 borderRadius: BorderRadius.circular(60),
               ),
+              errorBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: MyConstant.dark),
+              borderRadius: BorderRadius.circular(60),
+            )
             ),
           ),
         ),
@@ -164,6 +182,7 @@ class _CreateAccountState extends State<CreateAccount> {
           margin: EdgeInsets.only(top: 16),
           width: size * 0.6,
           child: TextFormField(
+            controller: passwordController,
             obscureText: statusRedeye,
             validator: (value) {
               if (value!.isEmpty) {
@@ -201,6 +220,10 @@ class _CreateAccountState extends State<CreateAccount> {
                 borderSide: BorderSide(color: MyConstant.dark),
                 borderRadius: BorderRadius.circular(60),
               ),
+              errorBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: MyConstant.dark),
+              borderRadius: BorderRadius.circular(60),
+            )
             ),
           ),
         ),
@@ -216,6 +239,7 @@ class _CreateAccountState extends State<CreateAccount> {
           margin: EdgeInsets.only(top: 16),
           width: size * 0.6,
           child: TextFormField(
+            controller: phoneController,
             keyboardType: TextInputType.phone,
             validator: (value) {
               if (value!.isEmpty) {
@@ -237,6 +261,10 @@ class _CreateAccountState extends State<CreateAccount> {
                 borderSide: BorderSide(color: MyConstant.dark),
                 borderRadius: BorderRadius.circular(60),
               ),
+              errorBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: MyConstant.dark),
+              borderRadius: BorderRadius.circular(60),
+            )
             ),
           ),
         ),
@@ -252,6 +280,7 @@ class _CreateAccountState extends State<CreateAccount> {
           margin: EdgeInsets.only(top: 16),
           width: size * 0.6,
           child: TextFormField(
+            controller: addressController,
             validator: (value) {
               if (value!.isEmpty) {
                 return 'กรุณากรอก Address ด้วย';
@@ -276,6 +305,10 @@ class _CreateAccountState extends State<CreateAccount> {
                 borderSide: BorderSide(color: MyConstant.dark),
                 borderRadius: BorderRadius.circular(60),
               ),
+              errorBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: MyConstant.dark),
+              borderRadius: BorderRadius.circular(60),
+            )
             ),
           ),
         ),
@@ -336,11 +369,83 @@ class _CreateAccountState extends State<CreateAccount> {
                 'กรุณาเลือกประเภทของผู้ใช้');
           } else {
             print('Process insert to database');
+            uploadPictureAndInsertData();
           }
         }
       },
       icon: Icon(Icons.cloud_upload),
     );
+  }
+
+  Future<Null> uploadPictureAndInsertData() async {
+    String name = nameController.text;
+    String username = usernameController.text;
+    String password = passwordController.text;
+    String phone = phoneController.text;
+    String address = addressController.text;
+    print(
+        'name = $name, username = $username, password = $password,phone = $phone,address = $address');
+    String path =
+        '${MyConstant.domin}/shoppingmall/getUserWhereUser.php?isAdd=true&username=$username';
+    await Dio().get(path).then((value) async {
+      print('value = $value');
+      if (value.toString() == 'null') {
+        print('OK!');
+
+        if (file == null) {
+          // No avatar
+          processInsertMySQL(
+            name: name,
+            username: username,
+            password: password,
+            phone: phone,
+            address: address,
+          );
+        } else {
+          //have avatar
+          String apiSaveAvatar =
+              '${MyConstant.domin}/shoppingmall/saveAvatar.php';
+          int i = Random().nextInt(100000);
+          String nameAvatar = 'avatar$i.jpg';
+          Map<String, dynamic> map = Map();
+          map['file'] =
+              await MultipartFile.fromFile(file!.path, filename: nameAvatar);
+          FormData data = FormData.fromMap(map);
+          await Dio().post(apiSaveAvatar, data: data).then((value) {
+            avatar = '/shoppingmall/avatar/$nameAvatar';
+            processInsertMySQL(
+              name: name,
+              username: username,
+              password: password,
+              phone: phone,
+              address: address,
+            );
+          });
+        }
+      } else {
+        MyDialog()
+            .normalDialog(context, 'Already in use', 'Please Change Username');
+      }
+    });
+  }
+
+  Future<Null> processInsertMySQL(
+      {String? name,
+      String? username,
+      String? password,
+      String? phone,
+      String? address}) async {
+    print('process insert MY SQL work! avatar -> $avatar');
+    String apiInsertUser =
+        '${MyConstant.domin}/shoppingmall/insertUser.php?isAdd=true&name=$name&type=$typeUser&username=$username&password=$password&phone=$phone&address=$address&avatar=$avatar&lat=$lat&lng=$lng';
+    await Dio().get(apiInsertUser).then((value) {
+      if (value.toString() == 'true') {
+        Navigator.pop(context);
+      } else {
+        MyDialog().normalDialog(
+            context, 'Create New User Filed!', 'Please Try Again');
+      }
+    });
   }
 
   Set<Marker> setMarker() => <Marker>[

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class MyConstant {
   //General
   static String appName = 'Shopping Mall';
+  static String domin = 'https://218f-49-237-17-189.ap.ngrok.io';
 
   //Route
   static String routeAuthen = '/authen';
@@ -10,12 +11,14 @@ class MyConstant {
   static String routeBuyerService = '/buyerService';
   static String routeSalerService = '/salerService';
   static String routeRiderService = '/riderService';
+  static String routeAddProduct = '/addProduct';
 
   //Image
   static String image1 = 'images/image1.png';
   static String image2 = 'images/image2.png';
   static String image3 = 'images/image3.png';
   static String image4 = 'images/image4.png';
+  static String image5 = 'images/image5.png';
   static String avatar = 'images/avatar.png';
 
   //Color
@@ -34,10 +37,20 @@ class MyConstant {
         color: dark,
         fontWeight: FontWeight.w700,
       );
+  TextStyle h2whiteStyle() => TextStyle(
+        fontSize: 18,
+        color: Colors.white,
+        fontWeight: FontWeight.w700,
+      );
   TextStyle h3Style() => TextStyle(
         fontSize: 14,
         color: dark,
         fontWeight: FontWeight.normal,
+      );
+  TextStyle h3whiteStyle() => TextStyle(
+        fontSize: 14,
+        color: Colors.white,
+        fontWeight: FontWeight.w700,
       );
 
   ButtonStyle myButtonStyle() => ElevatedButton.styleFrom(

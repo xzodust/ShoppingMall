@@ -1,5 +1,11 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shoppingmall/models/user_model.dart';
 import 'package:shoppingmall/utility/my_constand.dart';
+import 'package:shoppingmall/utility/my_dialog.dart';
 import 'package:shoppingmall/widgets/show_image.dart';
 import 'package:shoppingmall/widgets/show_title.dart';
 
@@ -12,6 +18,9 @@ class Authen extends StatefulWidget {
 
 class _AuthenState extends State<Authen> {
   bool statusRedeye = true;
+  final formKey = GlobalKey<FormState>();
+  TextEditingController usernameController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -21,15 +30,18 @@ class _AuthenState extends State<Authen> {
         child: GestureDetector(
           onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
           behavior: HitTestBehavior.opaque,
-          child: ListView(
-            children: [
-              buildimage(size),
-              buildAppName(),
-              buildUser(size),
-              buildPassword(size),
-              buildLogin(size),
-              buildCreateAccount(),
-            ],
+          child: Form(
+            key: formKey,
+            child: ListView(
+              children: [
+                buildimage(size),
+                buildAppName(),
+                buildUser(size),
+                buildPassword(size),
+                buildLogin(size),
+                buildCreateAccount(),
+              ],
+            ),
           ),
         ),
       ),
@@ -45,9 +57,9 @@ class _AuthenState extends State<Authen> {
           textStyle: MyConstant().h3Style(),
         ),
         TextButton(
-          onPressed: ()=>Navigator.pushNamed(context, MyConstant.routeCreateAccount),
+          onPressed: () =>
+              Navigator.pushNamed(context, MyConstant.routeCreateAccount),
           child: Text('Create Account'),
-          
         ),
       ],
     );
@@ -62,12 +74,68 @@ class _AuthenState extends State<Authen> {
           width: size * 0.6,
           child: ElevatedButton(
             style: MyConstant().myButtonStyle(),
-            onPressed: () {},
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                String username = usernameController.text;
+                String password = passwordController.text;
+                print('user = $username, password = $password');
+                checkAuthen(
+                  username: username,
+                  password: password,
+                );
+              }
+            },
             child: Text('Login'),
           ),
         ),
       ],
     );
+  }
+
+  Future<Null> checkAuthen({String? username, String? password}) async {
+    String apiCheckAuthen =
+        '${MyConstant.domin}/shoppingmall/getUserWhereUser.php?isAdd=true&username=$username';
+    await Dio().get(apiCheckAuthen).then((value) async {
+      print('value for API = $value');
+      if (value.toString() == 'null') {
+        MyDialog()
+            .normalDialog(context, 'User Filed!', 'No $username in Database');
+      } else {
+        for (var item in json.decode(value.data)) {
+          UserModel model = UserModel.fromMap(item);
+          if (password == model.password) {
+            //success authen
+            String type = model.type;
+
+            SharedPreferences preferences =
+                await SharedPreferences.getInstance();
+            preferences.setString('type', type);
+            preferences.setString('user', model.username);
+
+
+            switch (type) {
+              case 'buyer':
+                Navigator.pushNamedAndRemoveUntil(
+                    context, MyConstant.routeBuyerService, (route) => false);
+                break;
+              case 'saler':
+                Navigator.pushNamedAndRemoveUntil(
+                    context, MyConstant.routeSalerService, (route) => false);
+                break;
+              case 'rider':
+                Navigator.pushNamedAndRemoveUntil(
+                    context, MyConstant.routeRiderService, (route) => false);
+                break;
+              default:
+            }
+          } else {
+            //fail authen
+            MyDialog()
+                .normalDialog(context, 'Password Fail!', 'Please try again');
+          }
+        }
+      }
+    });
   }
 
   Row buildUser(double size) {
@@ -78,6 +146,14 @@ class _AuthenState extends State<Authen> {
           margin: EdgeInsets.only(top: 16),
           width: size * 0.6,
           child: TextFormField(
+            controller: usernameController,
+            validator: (value) {
+              if (value!.isEmpty) {
+                return 'Please Fill Username';
+              } else {
+                return null;
+              }
+            },
             decoration: InputDecoration(
               labelStyle: MyConstant().h3Style(),
               labelText: 'Username :',
@@ -93,6 +169,10 @@ class _AuthenState extends State<Authen> {
                 borderSide: BorderSide(color: MyConstant.dark),
                 borderRadius: BorderRadius.circular(60),
               ),
+              errorBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: MyConstant.dark),
+              borderRadius: BorderRadius.circular(60),
+            )
             ),
           ),
         ),
@@ -108,6 +188,14 @@ class _AuthenState extends State<Authen> {
           margin: EdgeInsets.only(top: 16),
           width: size * 0.6,
           child: TextFormField(
+            controller: passwordController,
+            validator: (value) {
+              if (value!.isEmpty) {
+                return 'Please Fill Password';
+              } else {
+                return null;
+              }
+            },
             obscureText: statusRedeye,
             decoration: InputDecoration(
               suffixIcon: IconButton(
@@ -140,6 +228,10 @@ class _AuthenState extends State<Authen> {
                 borderSide: BorderSide(color: MyConstant.dark),
                 borderRadius: BorderRadius.circular(60),
               ),
+              errorBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: MyConstant.dark),
+              borderRadius: BorderRadius.circular(60),
+            )
             ),
           ),
         ),
