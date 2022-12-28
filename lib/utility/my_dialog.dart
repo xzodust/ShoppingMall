@@ -63,4 +63,20 @@ class MyDialog {
       ),
     );
   }
+
+  Future<Null> showProgressDialog(BuildContext context) async {
+    showDialog(
+      context: context,
+      builder: (context) => WillPopScope(
+        child: Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
+          ),
+        ),
+        onWillPop: () async {
+          return false;
+        },
+      ),
+    );
+  }
 }

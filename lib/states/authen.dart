@@ -95,6 +95,7 @@ class _AuthenState extends State<Authen> {
   Future<Null> checkAuthen({String? username, String? password}) async {
     String apiCheckAuthen =
         '${MyConstant.domin}/shoppingmall/getUserWhereUser.php?isAdd=true&username=$username';
+        
     await Dio().get(apiCheckAuthen).then((value) async {
       print('value for API = $value');
       if (value.toString() == 'null') {
@@ -111,8 +112,6 @@ class _AuthenState extends State<Authen> {
                 await SharedPreferences.getInstance();
             preferences.setString('type', type);
             preferences.setString('user', model.username);
-
-
             switch (type) {
               case 'buyer':
                 Navigator.pushNamedAndRemoveUntil(

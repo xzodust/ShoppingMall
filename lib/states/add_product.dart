@@ -87,16 +87,20 @@ class _AddProductState extends State<AddProduct> {
 
   Future<Null> processAddProduct() async {
     if (formKey.currentState!.validate()) {
-      bool checkFile = false;
+      bool checkFile = true;
+
       for (var item in files) {
-        if (item != null) {
-          checkFile = true;
+        if (item == null) {
+          checkFile = false;
         }
       }
-      if (checkFile == true) {
-        print('choose image success');
+      if (checkFile) {
+        // print('choose image success');
         String apiSaveProduct =
             '${MyConstant.domin}/shoppingmall/saveProduct.php';
+
+        MyDialog().showProgressDialog(context);
+        int temp = 0;
 
         for (var item in files) {
           int i = Random().nextInt(1000000);
@@ -105,13 +109,17 @@ class _AddProductState extends State<AddProduct> {
           map['file'] =
               await MultipartFile.fromFile(item!.path, filename: nameFile);
           FormData data = FormData.fromMap(map);
-          await Dio()
-              .post(apiSaveProduct, data: data)
-              .then((value) => print('upload success'));
+          await Dio().post(apiSaveProduct, data: data).then((value) {
+            print('upload success');
+            temp++;
+            if (temp >= files.length) {
+              Navigator.pop(context);
+            }
+          });
         }
-      } else if (checkFile == false) {
-        MyDialog().normalDialog(
-            context, 'No Image for Product', 'Choose atleast 1 Image');
+      } else {
+        MyDialog()
+            .normalDialog(context, 'Choose more image', 'Choose until 4 image');
       }
     }
   }
